@@ -1,28 +1,29 @@
-import logo from './logo.svg';
 import './App.css';
 import React from 'react';
 import Login from './users/Login.js';
 import Tasks from './tasks/Tasks.js'
-import ReactDOM from "react-dom";
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
-
-
+import TaskCreator from './tasks/TaskCreator.js';
+import UserProfile from './users/UserProfile';
 const LoginView = () => (
   <Login />
 );
 
-const TasksView = () => (
-  <Tasks />
-);
 
 class App extends React.Component {
 
 
   constructor(props) {
     super(props);
-    this.state = { iisLoggedIn: false };
+    this.state = {
+      iisLoggedIn: false, tasks: [], user: {
+        name: "", email: "", password: ""
+      }
+    };
     this.saveCredentials = this.saveCredentials.bind(this);
     this.checkAuthentication = this.checkAuthentication.bind(this);
+    this.addTask = this.addTask.bind(this);
+    this.handleUserConfig = this.handleUserConfig.bind(this);
   }
 
   componentDidMount() {
@@ -31,8 +32,31 @@ class App extends React.Component {
   }
 
   saveCredentials() {
-    localStorage.setItem('username', 'david');
-    localStorage.setItem('password', 'vasquez');
+    let name = localStorage.getItem('username');
+    let pass = localStorage.getItem('password');
+    console.log(1)
+    if (!(name && pass)) {
+      localStorage.setItem('username', 'david');
+      localStorage.setItem('password', 'vasquez');
+    }
+    console.log(2)
+    let config = {
+      name: localStorage.getItem('username'),
+      password: localStorage.getItem('password'),
+      email: "david@example.com"
+    }
+    console.log(3)
+    this.setState({user: config});
+  }
+
+  addTask(task) {
+    console.log(JSON.stringify(task))
+    this.setState(prevState => {
+      const tasks = prevState.tasks.concat(task);
+      return {
+        tasks
+      }
+    });
   }
 
   checkAuthentication() {
@@ -47,7 +71,30 @@ class App extends React.Component {
     }
   }
 
+
+  handleUserConfig(config){
+    this.setState({user: config});
+    localStorage.setItem('username', config.name);
+    localStorage.setItem('password', config.password);
+  }
+
   render() {
+
+    const TasksCreator = () => (
+
+      <TaskCreator
+        onTaskAddition={this.addTask}
+      />
+    )
+
+    const TasksView = () => (
+      <Tasks tasks={this.state.tasks} user={this.state.user}/>
+    );
+
+    const UserProfileComponent = () => (
+      <UserProfile onConfigSubmit={this.handleUserConfig}></UserProfile>
+    );
+
     return (
       <div className="App">
         <Router>
@@ -57,7 +104,18 @@ class App extends React.Component {
             {
 
               this.state.isLoggedIn &&
-              <Route exact path="/tasks" component={TasksView} />
+              <div>
+                <Route exact path="/tasks" component={TasksView} />
+                <Route exact path="/create" component={TasksCreator} />
+                <Route exact path="/user" component={UserProfileComponent} />
+              </div>
+
+              
+            }
+
+            {
+
+              !this.state.isLoggedIn && <div>NOT AUTHENTICATED</div>
             }
 
           </Switch>

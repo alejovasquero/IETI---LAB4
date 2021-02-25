@@ -1,32 +1,78 @@
 import React from 'react';
-import Drawer from '@material-ui/core/Drawer';
-import { Avatar, Card, CardHeader, CssBaseline, Fab, Grid, Dialog, DialogTitle, TextField, Divider, DialogContent, InputLabel } from '@material-ui/core';
-import CardContent from '@material-ui/core/CardContent';
+import { Button, CssBaseline, Dialog, Fab, Grid } from '@material-ui/core';
 import "./Tasks.css"
-
-import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import AddIcon from '@material-ui/icons/Add';
-import TaskCreator from './TaskCreator';
 import TaskCard from './TaskCard';
 import LeftDrawer from './LeftDrawer';
-
+import { Link } from 'react-router-dom';
+import FilterListIcon from '@material-ui/icons/FilterList';
+import Tooltip from '@material-ui/core/Tooltip';
+import TaskFilter from './TaskFilter';
+import { format } from "date-fns";
 
 class Tasks extends React.Component {
 
 
     constructor(props) {
         super(props);
-        this.state = { drawerOpen: false, dialogOpen: false, tasks: [] };
+        this.state = {
+            drawerOpen: false, filterOpen: false, filterData: {
+                date: {value: new Date(), custom: false}, custom: false, responsible: "", state: ""
+            }
+        };
         this.toggleDrawer = this.toggleDrawer.bind(this);
         this.handleDrawerClose = this.handleDrawerClose.bind(this);
         this.handleDrawerOpen = this.handleDrawerOpen.bind(this);
-        this.handleTaskSubmit = this.handleTaskSubmit.bind(this);
         this.handleDialogClose = this.handleDialogClose.bind(this);
+        this.handleFilterClose = this.handleFilterClose.bind(this);
+        this.handleFilterOpen = this.handleFilterOpen.bind(this);
+        this.handleFilterDataDateChange = this.handleFilterDataDateChange.bind(this);
+        this.handleFilterDataResponsibleChange = this.handleFilterDataResponsibleChange.bind(this);
+        this.handleFilterDataStateChange = this.handleFilterDataStateChange.bind(this);
+        this.clearAll = this.clearAll.bind(this);
+    }
+
+    clearAll() {
+        this.setState({
+            filterData: {
+                date: {value: new Date(), custom: false}, custom: false, responsible: "", state: ""
+            }
+        });
+    }
+
+    handleFilterDataDateChange = (date) => {
+        var filterData = { ...this.state.filterData }
+        filterData.date = {value: date, custom : true};
+        filterData.custom = true;
+        this.setState({ filterData });
+    }
+
+    handleFilterDataResponsibleChange = (event) => {
+        console.log(this.state.filterData)
+        var filterData = { ...this.state.filterData }
+        filterData.responsible = event.target.value;
+        filterData.custom = true;
+        this.setState({ filterData });
+    }
+
+    handleFilterDataStateChange = (event) => {
+        var filterData = { ...this.state.filterData }
+        filterData.state = event.target.value;
+        filterData.custom = true;
+        this.setState({ filterData });
+    }
+
+    handleFilterOpen() {
+        this.setState({ filterOpen: true });
+    }
+
+    handleFilterClose() {
+        this.setState({ filterOpen: false });
     }
 
     toggleDrawer = (open) => (event) => {
@@ -46,38 +92,32 @@ class Tasks extends React.Component {
         this.setState({ drawerOpen: false });
     };
 
-    handleTaskSubmit = (event) => {
-        event.preventDefault();
-        let newTask = {
-            description: event.target[0].value,
-            responsible: {
-                name: event.target[1].value,
-                email: event.target[2].value
-            },
-            status: event.target[3].value,
-            dueDate: new Date()
 
-        }
-        this.setState(prevState => {
-            const tasks = prevState.tasks.concat(newTask)
-            return {
-                tasks
-            }
-        });
-        console.log(this.state.tasks);
-    }
 
     handleDialogClose() {
         this.setState({ dialogOpen: false });
     }
 
     render() {
-        console.log(this.state.tasks)
-        const taskList = this.state.tasks.map((task, i) => {
-            return (
-                <TaskCard key={i} task={task} />
-            );
-        });
+        console.log(this.props.tasks)
+        console.log(this.state.filterData)
+        const taskList = this.props.tasks.filter(task => 
+            !this.state.filterData.custom  ||
+             (
+                 (this.state.filterData.responsible === "" || task.responsible.name.includes(this.state.filterData.responsible))
+                  && (this.state.filterData.state === "" || task.status === this.state.filterData.state)
+                  && (!this.state.filterData.date.custom || format(task.dueDate, "dd/MM/yyyy") === format(this.state.filterData.date.value, "dd/MM/yyyy"))
+            )
+        
+        )
+            .map((task, i) => {
+                console.log(format(task.dueDate, "dd/MM/yyyy"))
+                console.log(format(this.state.filterData.date.value, "dd/MM/yyyy"))
+                
+                return (
+                    <TaskCard key={i} task={task} />
+                );
+            });
 
         return (
             <div>
@@ -100,22 +140,48 @@ class Tasks extends React.Component {
                     {taskList}
 
                     <div className="addIcon">
-                        <Fab onClick={() => { this.setState({ dialogOpen: true }) }} aria-label="Add Task">
-                            <AddIcon />
-                        </Fab>
+
+                        <Grid container direction="column" spacing={1}>
+                            <Grid item>
+                                <Tooltip title="Add Task" arrow>
+                                    <Link to="/create">
+                                        <Fab aria-label="Add Task">
+                                            <AddIcon />
+                                        </Fab>
+                                    </Link>
+                                </Tooltip>
+                            </Grid>
+
+
+                            <Grid item>
+                                <Tooltip title="Filter" arrow>
+                                    <Button onClick={this.handleFilterOpen}>
+                                        <Fab aria-label="Add Task">
+                                            <FilterListIcon />
+                                        </Fab>
+                                    </Button>
+                                </Tooltip>
+                            </Grid>
+
+
+                        </Grid>
+
                     </div>
 
                 </div>
 
-                <TaskCreator
-                    handleTaskSubmit={this.handleTaskSubmit}
-                    open={this.state.dialogOpen}
-                    onClose={this.handleDialogClose}>
-                </TaskCreator>
+                <LeftDrawer user={this.props.user} open={this.state.drawerOpen} toggleDrawer={this.toggleDrawer}></LeftDrawer>
 
-                <LeftDrawer open={this.state.drawerOpen} toggleDrawer={this.toggleDrawer}></LeftDrawer>
-
-
+                <Dialog open={this.state.filterOpen} onClose={this.handleFilterClose}>
+                    <TaskFilter
+                        filterData={this.state.filterData}
+                        onDateChange={this.handleFilterDataDateChange}
+                        onResponsibleChange={this.handleFilterDataResponsibleChange}
+                        onStateChange={this.handleFilterDataStateChange}
+                        close={this.handleFilterClose}
+                        clearAll={this.clearAll}
+                    ></TaskFilter>
+                </Dialog>
             </div>
         );
     }

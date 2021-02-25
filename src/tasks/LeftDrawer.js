@@ -46,17 +46,18 @@ class LeftDrawer extends React.Component {
                                     </Grid>
 
                                     <Grid item direction="column" justify="center">
-                                        <Typography>David Vasquez</Typography>
-                                        <Typography>david@example.com</Typography>
+                                        <Typography>{this.props.user.name}</Typography>
+                                        <Typography>{this.props.user.email}</Typography>
                                     </Grid>
                                 </Grid>
 
                                 <Grid container direction="row">
                                     <Grid>
-                                        <IconButton>
-                                            <EditIcon />
-                                        </IconButton>
-
+                                        <Link to="/user">
+                                            <IconButton>
+                                                <EditIcon />
+                                            </IconButton>
+                                        </Link>
                                     </Grid>
 
                                     <Grid direction="column" justify="center">
